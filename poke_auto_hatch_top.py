@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import serial
 from time import sleep
+import datetime
 from transitions import Machine
 from transitions.extensions.states import add_state_features, Volatile
 from stm.stm_top import Model, CustomMachine
@@ -19,10 +20,16 @@ from capture.videoinput_wrapper import VideoInputWrapper
 from show.drawing import DrawingClass
 
 model = Model()
-machine = CustomMachine(model=model, states=model.states, transitions=model.transitions, initial=model.states[0]["name"], 
-                        auto_transitions=False, ordered_transitions=False) 
+machine = CustomMachine(model=model,
+                        states=model.states,
+                        transitions=model.transitions,
+                        initial=model.states[0]["name"],
+                        auto_transitions=False,
+                        ordered_transitions=False)
 
-print('-------------------------start auto hatch program---------------------------')
+print(
+    '-------------------------start auto hatch program---------------------------'
+)
 
 capture = VideoCapture()
 capture.reset()
@@ -30,10 +37,10 @@ capture.reset_tick()
 capture.set_frame_rate()
 capture.select_source(name=capture.DEV_AMAREC)
 
-k=0
-test_flg =0
-test_cnt =0
-#fps 
+k = 0
+test_flg = 0
+test_cnt = 0
+#fps
 tm = cv2.TickMeter()
 tm.start()
 count = 0
@@ -42,24 +49,30 @@ fps = 0
 
 num_egg = 0
 htc_egg = 0
+shiny_number = 0
 
 draw_state = 'None'
 draw = DrawingClass()
 
 ser = SendSerial()
 
-print('//////////////////////// ',model.state,' ////////////////////////')
+print('//////////////////////// ', model.state, ' ////////////////////////')
 
 model.fromSTANBYtoPREPARE()
 
-img_a_breeder = cv2.imread("G:\\my documents\\VScode\\Python\\pokemon\\a_breeder.png")
-img_a_breeder2 = cv2.imread("G:\\my documents\\VScode\\Python\\pokemon\\a_breeder2.png")
+img_a_breeder = cv2.imread(
+    "G:\\my documents\\VScode\\Python\\pokemon\\a_breeder.png")
+img_a_breeder2 = cv2.imread(
+    "G:\\my documents\\VScode\\Python\\pokemon\\a_breeder2.png")
 
 _breeder_comment = cv2.imread("data\\sora_sel.png")
 
+start_time = datetime.datetime.now()
+
 while k != 27:
     frame = capture.read_frame()
-
+    if frame is None:
+        print("no frame")
     #ZNCC test ここから
     #gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
     #temp = cv2.cvtColor(img_a_breeder2, cv2.COLOR_RGB2GRAY)
@@ -70,10 +83,6 @@ while k != 27:
     #cv2.rectangle(frame, (pt[0], pt[1] ), (pt[0] + w, pt[1] + h), (0,0,200), 3)
     #cv2.putText(frame, 'ZNCC: {:.2f}'.format(max_value),
     #                   (10, 200), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), thickness=2)
-    
-
-
-
 
     #fps
     if count == max_count:
@@ -85,7 +94,7 @@ while k != 27:
     count += 1
 
     if frame is not None:
-        model.scope.state_action(frame, k, num_egg, htc_egg)
+        model.scope.state_action(frame, k, num_egg, htc_egg, shiny_number)
 
         frame = model.scope.action_frame
 
@@ -106,10 +115,13 @@ while k != 27:
             model.fromGETtoRUN()
 
         draw_state = model.state
-        frame = draw.drawing(frame, fps, num_egg, htc_egg, draw_state)
+        now = datetime.datetime.now()
+        time_delta = now - start_time
+        frame = draw.drawing(frame, fps, num_egg, htc_egg, draw_state,
+                             time_delta, shiny_number)
         frame = draw.draw_controler(frame, model.scope.send_command)
 
-    #if frame is not None:
+        #if frame is not None:
         cv2.imshow("fl", frame)
     k = cv2.waitKey(1)
 
@@ -118,26 +130,21 @@ while k != 27:
         cv2.imwrite('screenshot_%d.png' % int(time.time()), frame)
 
     if k == ord('t'):
-        _check_frame = np.int8(frame[270:320,512:550,:])
+        _check_frame = np.int8(frame[270:320, 512:550, :])
         frame_dif = np.amax(abs(np.int8(_breeder_comment) - _check_frame))
         cv2.imshow("f", _check_frame)
         if frame_dif <= 10:
             print('T')
-        else:print('F',frame_dif)
+        else:
+            print('F', frame_dif)
 
     if k == ord('g'):
-        ser.send_command_start('LY MAX')
+        ser.send_command_start('0 0 8 128 255 128 128')
         sleep(0.3)
-        ser.send_command_start('LX MAX')
+        ser.send_command_start('0 0 8 255 128 128 128')
         sleep(0.4)
-        ser.send_command_start('LY MIN')
+        ser.send_command_start('0 0 8 128 1 128 128')
         sleep(0.04)
         ser.send_command_stop()
 
-            
-
-
     ser.command_cont(k, model.scope.send_command)
-    
-
-    

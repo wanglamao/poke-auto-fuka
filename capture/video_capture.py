@@ -3,6 +3,7 @@ import threading
 import os
 import time
 from capture.videoinput_wrapper import VideoInputWrapper
+# from videoinput_wrapper import VideoInputWrapper
 #from offset import OffsetFilter
 
 class VideoCapture(object):
@@ -11,7 +12,7 @@ class VideoCapture(object):
         self._videoinput_wrapper = VideoInputWrapper()
         self.lock=threading.Lock()
         self._device_id = None
-        self.DEV_AMAREC = "AmaRec Video Capture"
+        self.DEV_AMAREC = "AVerMedia GC551 Video Capture"
         self.cap_recorded_video = False
         self.fps_requested = None
         self.frame_skip_rt = None
@@ -169,6 +170,7 @@ class VideoCapture(object):
             self.lock.release()
 
         if img is None:
+            
             return None
 
         if self.cap_optimal_input_resolution:
@@ -219,6 +221,8 @@ if __name__ == '__main__':
         frame = obj.read_frame()
         if frame is not None:
             cv2.imshow("fl", frame)
+        else:
+            print("no frame")
         k = cv2.waitKey(1)
 
         if k == ord('s'):
